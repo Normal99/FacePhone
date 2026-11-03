@@ -15,7 +15,7 @@
         android:paddingTop="8dp"
         android:paddingBottom="8dp"
         android:text="@string/people"
-        android:textColor="#202020"
+        android:textColor="@color/widget_text"
         android:textSize="30sp" />
 
     <GridView

@@ -1,4 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <color name="ic_launcher_background">#1B8E3E</color>
+    <!-- The faces widget follows the phone's light and dark mode, like One UI. -->
+    <color name="widget_background">#F2FFFFFF</color>
+    <color name="widget_text">#202020</color>
 </resources>

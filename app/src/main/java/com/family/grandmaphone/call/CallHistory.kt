@@ -11,6 +11,7 @@ import android.provider.CallLog
 import android.telephony.PhoneStateListener
 import android.telephony.TelephonyManager
 import androidx.core.content.ContextCompat
+import com.family.grandmaphone.data.Contact
 import com.family.grandmaphone.data.ContactMatch
 import com.family.grandmaphone.data.Repo
 import com.family.grandmaphone.ui.Notifier
@@ -31,6 +32,10 @@ object CallHistory {
     private const val LAST_MISSED = "last_missed"
 
     val entries = MutableStateFlow<List<CallEntry>>(emptyList())
+
+    /** When she last started a WhatsApp call to each person. WhatsApp keeps its own log. */
+    val whatsAppCalls = MutableStateFlow<Map<String, Long>>(emptyMap())
+    private const val WHATSAPP_CALLS = "whatsapp_calls"
 
     private var watching = false
 
@@ -57,7 +62,30 @@ object CallHistory {
         refresh(app)
     }
 
+    fun noteWhatsAppCall(context: Context, contactId: String) {
+        whatsAppCalls.value = whatsAppCalls.value + (contactId to System.currentTimeMillis())
+        val json = org.json.JSONObject(whatsAppCalls.value).toString()
+        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().putString(WHATSAPP_CALLS, json).apply()
+    }
+
+    /** The people she called or who called her most recently come first. The rest keep their order. */
+    fun recentFirst(contacts: List<Contact>, calls: List<CallEntry>, whatsApp: Map<String, Long>): List<Contact> {
+        val last = HashMap<String, Long>(whatsApp)
+        for (call in calls) {
+            val contact = ContactMatch.byNumber(contacts, call.number) ?: continue
+            if (call.time > (last[contact.id] ?: 0L)) last[contact.id] = call.time
+        }
+        return contacts.sortedByDescending { last[it.id] ?: 0L }
+    }
+
     fun refresh(context: Context) {
+        if (whatsAppCalls.value.isEmpty()) {
+            val saved = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getString(WHATSAPP_CALLS, null)
+            if (saved != null) {
+                val json = org.json.JSONObject(saved)
+                whatsAppCalls.value = json.keys().asSequence().associateWith { json.getLong(it) }
+            }
+        }
         val list = read(context)
         entries.value = list
         noticeMissed(context, list)

@@ -56,6 +56,7 @@ import androidx.core.content.pm.ShortcutManagerCompat
 import androidx.core.graphics.drawable.IconCompat
 import com.family.grandmaphone.BuildConfig
 import com.family.grandmaphone.R
+import com.family.grandmaphone.call.CallHistory
 import com.family.grandmaphone.call.Calling
 import com.family.grandmaphone.call.DialActivity
 import com.family.grandmaphone.data.CallRoute
@@ -504,8 +505,11 @@ private fun ContactEditor(original: Contact, onClose: () -> Unit) {
         }
         OneUiGroup {
             ClipRecorder(R.string.record_name, Repo.nameClipFile(id))
-            OneUiDivider()
-            ClipRecorder(R.string.record_ring, Repo.ringClipFile(id))
+            // A ringtone clip only plays while this app is the default phone app.
+            if (CallHistory.isDefaultPhoneApp(LocalContext.current)) {
+                OneUiDivider()
+                ClipRecorder(R.string.record_ring, Repo.ringClipFile(id))
+            }
             if (photo != null) {
                 OneUiDivider()
                 OneUiRow(

@@ -12,7 +12,9 @@ object PhoneNumbers {
         val x = digits(a)
         val y = digits(b)
         if (x.length < MIN_DIGITS || y.length < MIN_DIGITS) return x.isNotEmpty() && x == y
-        return x.takeLast(MATCH_DIGITS) == y.takeLast(MATCH_DIGITS)
+        // A local number can be shorter than the match length, like Norway's 8 digits.
+        val length = minOf(MATCH_DIGITS, x.length, y.length)
+        return x.takeLast(length) == y.takeLast(length)
     }
 
     /**

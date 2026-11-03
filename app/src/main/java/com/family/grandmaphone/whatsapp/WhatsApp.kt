@@ -13,6 +13,7 @@ import android.service.notification.NotificationListenerService
 import android.service.notification.StatusBarNotification
 import androidx.core.content.FileProvider
 import androidx.core.graphics.drawable.toBitmap
+import com.family.grandmaphone.call.CallHistory
 import com.family.grandmaphone.data.Contact
 import com.family.grandmaphone.data.ContactMatch
 import com.family.grandmaphone.data.PhoneNumbers
@@ -63,6 +64,7 @@ object WhatsApp {
 
     /** Starts a call using the entry WhatsApp keeps in phone contacts, or opens the chat without one. */
     fun startCall(context: Context, contact: Contact, video: Boolean): Boolean {
+        CallHistory.noteWhatsAppCall(context, contact.id)
         val mime = if (video) MIME_VIDEO_CALL else MIME_VOICE_CALL
         val id = callEntry(context, contact, mime)
         if (id != null) {

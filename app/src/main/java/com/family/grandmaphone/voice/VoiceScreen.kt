@@ -48,6 +48,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.family.grandmaphone.R
 import com.family.grandmaphone.call.Calling
+import com.family.grandmaphone.data.CallRoute
+import com.family.grandmaphone.whatsapp.WhatsApp
 import com.family.grandmaphone.data.Contact
 import com.family.grandmaphone.data.Repo
 import com.family.grandmaphone.media.Speaker
@@ -225,7 +227,11 @@ fun VoiceScreen(onClose: () -> Unit, onMessage: (Contact) -> Unit) {
                     if (result.contacts.size == 1) {
                         Confirm(result.contacts.first(), result.action, onClose, onMessage)
                     } else {
-                        Choose(result, onClose, onMessage)
+                        // She picks a face, then chooses a regular or WhatsApp call on the next screen.
+                        var picked by remember(result) { mutableStateOf<Contact?>(null) }
+                        val person = picked
+                        if (person != null) Confirm(person, result.action, onClose, onMessage)
+                        else Choose(result, onClose) { picked = it }
                     }
                 VoiceResult.NotFound -> Centered {
                     Big(stringResource(R.string.didnt_find))
@@ -288,9 +294,20 @@ private fun androidx.compose.foundation.layout.ColumnScope.Confirm(
             RoundIconButton(Icons.Filled.Mic, AppColors.Blue, 148, stringResource(R.string.message), label = stringResource(R.string.message)) {
                 onMessage(contact)
             }
-        } else if (Calling.canCall(context, contact)) {
-            RoundIconButton(Icons.Filled.Call, Calling.color(contact), 148, stringResource(R.string.call), label = stringResource(R.string.call)) {
-                if (Calling.call(context, contact)) onClose()
+        } else {
+            val offerWhatsApp = Calling.route(contact) == CallRoute.PHONE && WhatsApp.isInstalled(context)
+            // Two call buttons and cancel have to fit across a phone screen.
+            val size = if (offerWhatsApp) 120 else 148
+            if (Calling.canCall(context, contact)) {
+                RoundIconButton(Icons.Filled.Call, Calling.color(contact), size, stringResource(R.string.call), label = stringResource(R.string.call)) {
+                    if (Calling.call(context, contact)) onClose()
+                }
+            }
+            // A regular call can also go over WhatsApp, her choice.
+            if (offerWhatsApp) {
+                RoundIconButton(Icons.Filled.Call, AppColors.WhatsApp, size, stringResource(R.string.whatsapp_call), label = "WhatsApp") {
+                    if (WhatsApp.startCall(context, contact, video = false)) onClose()
+                }
             }
         }
     }
@@ -300,9 +317,8 @@ private fun androidx.compose.foundation.layout.ColumnScope.Confirm(
 private fun androidx.compose.foundation.layout.ColumnScope.Choose(
     result: VoiceResult.Choose,
     onClose: () -> Unit,
-    onMessage: (Contact) -> Unit,
+    onPick: (Contact) -> Unit,
 ) {
-    val context = LocalContext.current
     Big(stringResource(R.string.who_do_you_mean))
     LazyVerticalGrid(
         GridCells.Fixed(2),
@@ -312,13 +328,7 @@ private fun androidx.compose.foundation.layout.ColumnScope.Choose(
     ) {
         items(result.contacts, key = { it.id }) { contact ->
             Box(
-                Modifier.aspectRatio(1f).clip(RoundedCornerShape(26.dp)).forgivingTap {
-                    if (result.action == VoiceAction.MESSAGE) {
-                        onMessage(contact)
-                    } else {
-                        if (Calling.call(context, contact)) onClose()
-                    }
-                }
+                Modifier.aspectRatio(1f).clip(RoundedCornerShape(26.dp)).forgivingTap { onPick(contact) }
             ) {
                 FaceImage(contact, Modifier.fillMaxSize())
                 Text(

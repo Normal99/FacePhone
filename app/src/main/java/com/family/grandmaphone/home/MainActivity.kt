@@ -218,7 +218,11 @@ private fun FacesScreen(go: (Screen) -> Unit) {
     val missed by Repo.missedCalls.collectAsState()
     val whatsApp by Repo.whatsAppUnread.collectAsState()
     val settings by Repo.settings.collectAsState()
-    val contacts = Repo.visibleContacts(everyone, settings)
+    val calls by CallHistory.entries.collectAsState()
+    val whatsAppCalls by CallHistory.whatsAppCalls.collectAsState()
+    val contacts = remember(everyone, settings, calls, whatsAppCalls) {
+        CallHistory.recentFirst(Repo.visibleContacts(everyone, settings), calls, whatsAppCalls)
+    }
     val openAdmin = { context.startActivity(Intent(context, AdminActivity::class.java)) }
 
     Column(Modifier.fillMaxSize()) {

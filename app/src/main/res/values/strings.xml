@@ -135,4 +135,10 @@
     <string name="retake_photo">Take a new photo</string>
     <string name="pick_photo">Choose a photo from the gallery</string>
     <string name="widget_description">Her people\'s faces on a home screen page. Tap a face to open that person.</string>
+    <string name="support_number">Number for help with the app (the question mark on her screen)</string>
+    <string name="app_help">Help with the phone</string>
+    <string name="app_help_explained">Something wrong with the phone? Call for help.</string>
+    <string name="call_support">Call for help</string>
+    <string name="type_message">Type a message</string>
+    <string name="not_sent">Couldn\'t send. Is there a SIM card?</string>
 </resources>

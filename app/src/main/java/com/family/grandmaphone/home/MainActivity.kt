@@ -55,7 +55,12 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.LocalHospital
 import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.QuestionMark
 import androidx.compose.material.icons.filled.Refresh
+import com.family.grandmaphone.sms.SmsClient
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material.icons.filled.Send
+import androidx.compose.material.icons.filled.HeadsetMic
 import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.SupportAgent
@@ -133,6 +138,7 @@ private sealed interface Screen {
     data class Viewer(val contactId: String, val itemId: String) : Screen
     data object Voice : Screen
     data object History : Screen
+    data object Support : Screen
 }
 
 /** Her screens. Faces, icons and sound come first, with names and short labels as a fallback. */
@@ -160,6 +166,7 @@ class MainActivity : ComponentActivity() {
                         is Screen.Sending -> Repo.contact(s.contactId)?.let { SendingScreen(it, s, go) }
                         is Screen.Viewer -> ViewerScreen(s, go)
                         Screen.History -> HistoryScreen(go)
+                        Screen.Support -> SupportScreen(go)
                         Screen.Voice -> VoiceScreen(
                             onClose = { go(Screen.Faces) },
                             onMessage = { go(Screen.Record(it.id, viaWhatsApp = false)) },
@@ -189,7 +196,7 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun backFrom(screen: Screen): Screen = when (screen) {
-        is Screen.Person, Screen.Faces, Screen.Voice, Screen.History -> Screen.Faces
+        is Screen.Person, Screen.Faces, Screen.Voice, Screen.History, Screen.Support -> Screen.Faces
         is Screen.Record -> Screen.Person(screen.contactId)
         is Screen.Sending -> Screen.Person(screen.contactId)
         is Screen.Viewer -> Screen.Person(screen.contactId)
@@ -211,8 +218,6 @@ private fun pulse(): Float {
 
 // ---- All the faces ----
 
-private const val ADMIN_TAPS = 7
-private const val ADMIN_TAP_WINDOW_MILLIS = 6000L
 
 @Composable
 private fun FacesScreen(go: (Screen) -> Unit) {
@@ -247,6 +252,16 @@ private fun FacesScreen(go: (Screen) -> Unit) {
                         contentAlignment = Alignment.Center,
                     ) {
                         Icon(Icons.Filled.Settings, stringResource(R.string.settings), tint = Color.White, modifier = Modifier.size(36.dp))
+                    }
+                    // Help with the app: calls the number the family set.
+                    if (settings.supportNumber.isNotBlank()) {
+                        Box(
+                            Modifier.align(Alignment.CenterEnd).size(64.dp).clip(CircleShape)
+                                .background(AppColors.Blue).forgivingTap { go(Screen.Support) },
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Icon(Icons.Filled.QuestionMark, stringResource(R.string.app_help), tint = Color.White, modifier = Modifier.size(40.dp))
+                        }
                     }
                 }
             }
@@ -305,7 +320,84 @@ private fun FacesScreen(go: (Screen) -> Unit) {
             }
         }
     }
-    AdminCorner(openAdmin)
+}
+
+/**
+ * Help with the app itself, for her or grandpa: a call-centre style call button, and a box to
+ * type a message. Foreign numbers get the message in WhatsApp, ready to send.
+ */
+@Composable
+private fun SupportScreen(go: (Screen) -> Unit) {
+    val context = LocalContext.current
+    val settings by Repo.settings.collectAsState()
+    val contacts by Repo.contacts.collectAsState()
+    val number = settings.supportNumber
+    // Someone in her contacts keeps their face and WhatsApp. Otherwise it's just the number.
+    val person = ContactMatch.byNumber(contacts, number) ?: Contact("support", number, number)
+    var text by remember { mutableStateOf("") }
+    var sent by remember { mutableStateOf<Boolean?>(null) }
+    val viaWhatsApp = Calling.route(person) == CallRoute.WHATSAPP
+    val sendText = {
+        if (viaWhatsApp) {
+            if (WhatsApp.openChat(context, person, text.trim())) text = ""
+        } else {
+            sent = SmsClient.send(context, number, text.trim())
+            if (sent == true) text = ""
+        }
+    }
+
+    Column(Modifier.fillMaxSize().padding(16.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            RoundIconButton(Icons.Filled.ArrowBack, AppColors.Dark, 72, stringResource(R.string.back)) { go(Screen.Faces) }
+            Text(stringResource(R.string.app_help), Modifier.weight(1f), fontSize = 28.sp, fontWeight = FontWeight.Light, textAlign = TextAlign.Center)
+            Box(Modifier.size(72.dp).clip(CircleShape).background(AppColors.Blue), contentAlignment = Alignment.Center) {
+                Icon(Icons.Filled.QuestionMark, null, tint = Color.White, modifier = Modifier.size(44.dp))
+            }
+        }
+        Box(Modifier.weight(1f).fillMaxWidth()) {
+            FaceImage(person, Modifier.fillMaxSize().clip(RoundedCornerShape(26.dp)))
+            NameStrip(person.name, Modifier.align(Alignment.BottomCenter))
+        }
+        Text(stringResource(R.string.app_help_explained), Modifier.fillMaxWidth(), fontSize = 20.sp, textAlign = TextAlign.Center)
+        if (Calling.canCall(context, person)) {
+            Box(
+                Modifier.fillMaxWidth().height(96.dp).clip(RoundedCornerShape(48.dp))
+                    .background(Calling.color(person)).forgivingTap { Calling.call(context, person) },
+                contentAlignment = Alignment.Center,
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Icon(Icons.Filled.HeadsetMic, null, tint = Color.White, modifier = Modifier.size(56.dp))
+                    Text(stringResource(R.string.call_support), color = Color.White, fontSize = 26.sp, fontWeight = FontWeight.Bold)
+                }
+            }
+        }
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            OutlinedTextField(
+                text,
+                {
+                    text = it
+                    sent = null
+                },
+                Modifier.weight(1f),
+                placeholder = { Text(stringResource(R.string.type_message)) },
+                textStyle = androidx.compose.ui.text.TextStyle(fontSize = 20.sp),
+                shape = RoundedCornerShape(28.dp),
+                maxLines = 4,
+            )
+            RoundIconButton(Icons.Filled.Send, if (text.isBlank()) AppColors.Grey else AppColors.Blue, 72, stringResource(R.string.send)) {
+                if (text.isNotBlank()) sendText()
+            }
+        }
+        sent?.let {
+            Text(
+                stringResource(if (it) R.string.sent else R.string.not_sent),
+                Modifier.fillMaxWidth(),
+                fontSize = 18.sp,
+                textAlign = TextAlign.Center,
+                color = if (it) AppColors.Green else AppColors.Red,
+            )
+        }
+    }
 }
 
 /** Recent calls as faces. Arrows show the direction, red means missed. Tapping opens that person. */
@@ -385,24 +477,6 @@ private fun whenText(time: Long): String {
     val format = if (today) java.text.DateFormat.getTimeInstance(java.text.DateFormat.SHORT)
     else java.text.DateFormat.getDateTimeInstance(java.text.DateFormat.MEDIUM, java.text.DateFormat.SHORT)
     return format.format(java.util.Date(time))
-}
-
-/** Seven quick taps in the top-right corner open the family's settings. */
-@Composable
-private fun AdminCorner(open: () -> Unit) {
-    var taps by remember { mutableStateOf(emptyList<Long>()) }
-    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.TopEnd) {
-        Box(
-            Modifier.size(64.dp).anyTap {
-                val now = System.currentTimeMillis()
-                taps = (taps + now).filter { now - it < ADMIN_TAP_WINDOW_MILLIS }
-                if (taps.size >= ADMIN_TAPS) {
-                    taps = emptyList()
-                    open()
-                }
-            }
-        )
-    }
 }
 
 /** The name sits below the photo, so large text settings can never cover the face. */

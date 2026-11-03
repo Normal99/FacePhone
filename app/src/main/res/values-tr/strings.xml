@@ -137,4 +137,10 @@
     <string name="retake_photo">Yeni fotoğraf çek</string>
     <string name="pick_photo">Galeriden fotoğraf seç</string>
     <string name="widget_description">Kişilerinin yüzleri ana ekranda bir sayfada. Bir yüze dokununca o kişi açılır.</string>
+    <string name="support_number">Uygulama ile ilgili yardım numarası (ekrandaki soru işareti)</string>
+    <string name="app_help">Telefon için yardım</string>
+    <string name="app_help_explained">Telefonda bir sorun mu var? Yardım için ara.</string>
+    <string name="call_support">Yardım hattını ara</string>
+    <string name="type_message">Mesaj yazın</string>
+    <string name="not_sent">Gönderilemedi. SIM kart takılı mı?</string>
 </resources>

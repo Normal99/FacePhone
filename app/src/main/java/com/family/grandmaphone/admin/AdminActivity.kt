@@ -553,14 +553,16 @@ private fun HelpPage(onBack: () -> Unit) {
     val settings = remember { Repo.settings.value }
     var emergency by remember { mutableStateOf(settings.emergencyNumber) }
     var help by remember { mutableStateOf(settings.helpMessage) }
+    var support by remember { mutableStateOf(settings.supportNumber) }
     val contacts by Repo.contacts.collectAsState()
-    SettingsPage(R.string.cat_help, onBack, listOf(emergency, help), save = {
-        updateSettings { it.copy(emergencyNumber = emergency.trim(), helpMessage = help.trim()) }
+    SettingsPage(R.string.cat_help, onBack, listOf(emergency, help, support), save = {
+        updateSettings { it.copy(emergencyNumber = emergency.trim(), helpMessage = help.trim(), supportNumber = support.trim()) }
     }) {
         OneUiGroup {
             FieldPadding {
                 Field(R.string.emergency_number, emergency) { emergency = it }
                 Field(R.string.help_message, help, stringResource(R.string.default_help_message)) { help = it }
+                Field(R.string.support_number, support) { support = it }
             }
         }
         val helpers = contacts.filter { it.helpsInEmergency }

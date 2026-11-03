@@ -57,9 +57,11 @@ object WhatsApp {
         return PhoneNumberUtils.formatNumberToE164(number, iso)?.let { PhoneNumbers.digits(it) }
     }
 
-    fun openChat(context: Context, contact: Contact): Boolean {
+    /** Opens their chat, with [text] typed in and ready to send when there is some. */
+    fun openChat(context: Context, contact: Contact, text: String = ""): Boolean {
         val digits = internationalDigits(context, contact) ?: return false
-        return launch(context, Intent(Intent.ACTION_VIEW, Uri.parse("https://wa.me/$digits")).setPackage(PACKAGE))
+        val typed = if (text.isBlank()) "" else "?text=" + Uri.encode(text)
+        return launch(context, Intent(Intent.ACTION_VIEW, Uri.parse("https://wa.me/$digits$typed")).setPackage(PACKAGE))
     }
 
     /** Starts a call using the entry WhatsApp keeps in phone contacts, or opens the chat without one. */

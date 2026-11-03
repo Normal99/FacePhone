@@ -72,7 +72,7 @@ This builds, tests and uploads the APK as release `v<versionCode>`. The reposito
 
 Add people in the phone's contacts app, with a clear photo. They appear by themselves.
 
-Open the family settings by tapping the top-right corner of the faces screen 7 times quickly. With no contacts yet, the grey plus tile also opens them. There you can:
+Open the family settings with the grey gear next to the title on the faces screen. With no contacts yet, the grey plus tile also opens them. There you can:
 
 - Finish the setup list, which also checks that the phone isn't muted.
 - For each person: record voice clips, list other names she uses, choose who gets help calls, or hide them.

@@ -17,8 +17,9 @@ import java.util.UUID
 
 object SmsClient {
     /** Sends a text and records it, which the default SMS app is responsible for doing. */
-    fun send(context: Context, toPhone: String, text: String) {
-        try {
+    /** False when it couldn't be handed to the phone, such as with no SIM. */
+    fun send(context: Context, toPhone: String, text: String): Boolean {
+        return try {
             val manager = SmsManager.getDefault()
             manager.sendMultipartTextMessage(toPhone, null, manager.divideMessage(text), null, null)
             context.contentResolver.insert(Telephony.Sms.Sent.CONTENT_URI, ContentValues().apply {
@@ -27,8 +28,10 @@ object SmsClient {
                 put(Telephony.Sms.DATE, System.currentTimeMillis())
                 put(Telephony.Sms.READ, 1)
             })
+            true
         } catch (_: Exception) {
             // No SIM or no permission. Help and battery alerts have other ways to get noticed.
+            false
         }
     }
 }

@@ -69,6 +69,7 @@ object Repo {
             s.optString("voiceModel"),
             s.optBoolean("voiceHearsAudio"),
             s.optBoolean("pickContacts"),
+            s.optString("supportNumber"),
         )
     }
 
@@ -98,7 +99,8 @@ object Repo {
             .put("helpMessage", s.helpMessage).put("chargePrompt", s.chargePrompt)
             .put("favouritesOnly", s.favouritesOnly).put("voiceApiKey", s.voiceApiKey)
             .put("voiceModel", s.voiceModel).put("voiceHearsAudio", s.voiceHearsAudio)
-            .put("pickContacts", s.pickContacts))
+            .put("pickContacts", s.pickContacts)
+            .put("supportNumber", s.supportNumber))
         val temp = File(root, "state.json.tmp")
         temp.writeText(json.toString())
         temp.renameTo(stateFile)

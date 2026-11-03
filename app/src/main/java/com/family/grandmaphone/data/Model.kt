@@ -46,6 +46,8 @@ data class Settings(
     val voiceHearsAudio: Boolean = false,
     /** Only the people the family switched on appear, so new contacts stay off her screen. */
     val pickContacts: Boolean = false,
+    /** Who she calls about the app itself, from the question mark on her screen. */
+    val supportNumber: String = "",
 )
 
 object ContactMatch {

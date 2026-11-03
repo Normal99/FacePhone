@@ -106,4 +106,8 @@
     <string name="on_her_screen">Ekranında (%1$d)</string>
     <string name="not_on_her_screen">Ekranında değil (%1$d)</string>
     <string name="edit">Düzenle</string>
+    <string name="all_off">Herkesi kapat (%1$d)</string>
+    <string name="all_on">Herkesi aç (%1$d)</string>
+    <string name="found_off">Bulunan %1$d kişiyi kapat</string>
+    <string name="found_on">Bulunan %1$d kişiyi aç</string>
 </resources>

@@ -104,4 +104,8 @@
     <string name="on_her_screen">On her screen (%1$d)</string>
     <string name="not_on_her_screen">Not on her screen (%1$d)</string>
     <string name="edit">Edit</string>
+    <string name="all_off">Turn everyone off (%1$d)</string>
+    <string name="all_on">Turn everyone on (%1$d)</string>
+    <string name="found_off">Turn these %1$d off</string>
+    <string name="found_on">Turn these %1$d on</string>
 </resources>

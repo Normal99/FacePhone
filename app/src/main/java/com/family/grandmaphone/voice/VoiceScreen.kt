@@ -161,7 +161,7 @@ fun VoiceScreen(onClose: () -> Unit, onMessage: (Contact) -> Unit) {
         }
         state = VoiceState.Thinking("")
         val settings = Repo.settings.value
-        val people = Repo.contacts.value.filterNot { it.hidden }
+        val people = Repo.visibleContacts(Repo.contacts.value, Repo.settings.value)
         try {
             val result = withContext(Dispatchers.IO) {
                 VoiceResolver.resolveAudio(settings.voiceApiKey, settings.voiceModel, wav, people)
@@ -199,7 +199,7 @@ fun VoiceScreen(onClose: () -> Unit, onMessage: (Contact) -> Unit) {
     }
     LaunchedEffect(heard) {
         if (heard.isEmpty()) return@LaunchedEffect
-        val people = Repo.contacts.value.filterNot { it.hidden }
+        val people = Repo.visibleContacts(Repo.contacts.value, Repo.settings.value)
         state = VoiceState.Result(work(context, heard, people), heard.first())
     }
 

@@ -312,6 +312,22 @@ private fun ContactsPage(onEdit: (Contact) -> Unit, onBack: () -> Unit) {
                 onClick = { context.startActivity(Intent(Intent.ACTION_INSERT, ContactsContract.Contacts.CONTENT_URI)) },
             )
         }
+        if (found.isNotEmpty()) {
+            // With hundreds of contacts, switch everyone the search found at once.
+            OneUiGroup {
+                OneUiRow(
+                    stringResource(if (words.isEmpty()) R.string.all_off else R.string.found_off, notShown.size + shown.size),
+                    titleColor = MaterialTheme.colorScheme.primary,
+                    onClick = { Repo.setShownAll(found, false) },
+                )
+                OneUiDivider()
+                OneUiRow(
+                    stringResource(if (words.isEmpty()) R.string.all_on else R.string.found_on, notShown.size + shown.size),
+                    titleColor = MaterialTheme.colorScheme.primary,
+                    onClick = { Repo.setShownAll(found, true) },
+                )
+            }
+        }
         if (shown.isNotEmpty()) {
             OneUiGroup(stringResource(R.string.on_her_screen, shown.size)) {
                 shown.forEachIndexed { index, contact ->

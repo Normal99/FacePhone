@@ -133,6 +133,21 @@ object Repo {
         save()
     }
 
+    /** Switches many people at once, such as everyone the search found, with one save. */
+    @Synchronized
+    fun setShownAll(people: List<Contact>, shown: Boolean) {
+        val ids = people.map { it.id }.toSet()
+        val pick = settings.value.pickContacts
+        contacts.value = contacts.value.map {
+            when {
+                it.id !in ids -> it
+                pick -> it.copy(picked = shown)
+                else -> it.copy(hidden = !shown)
+            }
+        }
+        save()
+    }
+
     @Synchronized
     fun setShown(contact: Contact, shown: Boolean) = saveContact(
         if (settings.value.pickContacts) contact.copy(picked = shown) else contact.copy(hidden = !shown)

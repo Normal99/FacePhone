@@ -4,6 +4,7 @@ object PhoneNumbers {
     /** Enough trailing digits to identify a number whether or not it has a country code. */
     private const val MATCH_DIGITS = 9
     private const val MIN_DIGITS = 7
+    private const val TURKEY = "90"
 
     fun digits(number: String): String = number.filter { it in '0'..'9' }
 
@@ -28,6 +29,8 @@ object PhoneNumbers {
         if (trimmed.startsWith("+")) return all
         if (all.startsWith("00")) return all.drop(2)
         val code = digits(defaultCountryCode)
+        // A Turkish mobile written the local way, 0 5xx xxx xx xx, is Turkish wherever she lives.
+        if (code != TURKEY && all.length == 11 && all.startsWith("05")) return TURKEY + all.drop(1)
         if (code.isEmpty()) return null
         return code + all.removePrefix("0")
     }

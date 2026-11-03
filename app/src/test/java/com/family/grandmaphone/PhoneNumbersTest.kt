@@ -65,7 +65,17 @@ class PhoneNumbersTest {
         assertEquals("905321234567", PhoneNumbers.international("+90 532 123 45 67", ""))
         assertEquals("905321234567", PhoneNumbers.international("00905321234567", ""))
         assertEquals("905321234567", PhoneNumbers.international("0532 123 45 67", "+90"))
-        assertNull(PhoneNumbers.international("0532 123 45 67", ""))
+        assertNull(PhoneNumbers.international("91234567", ""))
         assertNull(PhoneNumbers.international("", "+90"))
+    }
+
+    @Test
+    fun turkishMobilesWrittenLocallyAreTurkish() {
+        assertEquals("905321234567", PhoneNumbers.international("0532 123 45 67", "+47"))
+        assertEquals("905321234567", PhoneNumbers.international("05321234567", ""))
+        assertEquals(CallRoute.WHATSAPP, CallRoute.of("0532 123 45 67", "+47"))
+        assertEquals(CallRoute.PHONE, CallRoute.of("0532 123 45 67", "+90"))
+        // Norwegian numbers are unchanged.
+        assertEquals(CallRoute.PHONE, CallRoute.of("91 23 45 67", "+47"))
     }
 }

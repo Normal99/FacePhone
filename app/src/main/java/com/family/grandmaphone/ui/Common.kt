@@ -57,6 +57,9 @@ object AppColors {
     val WhatsApp = Color(0xFF128C7E)
     val Grey = Color(0xFF8A8A8A)
     val Dark = Color(0xFF3A3A3A)
+    val Orange = Color(0xFFEF6C00)
+    val Purple = Color(0xFF7B4DFF)
+    val Teal = Color(0xFF00897B)
 }
 
 private const val REPEAT_GUARD_MILLIS = 700L
@@ -210,6 +213,35 @@ fun FaceImage(contact: Contact?, modifier: Modifier = Modifier) {
     } else {
         Box(modifier.background(AppColors.Grey), contentAlignment = Alignment.Center) {
             Icon(Icons.Filled.Person, "Unknown", tint = Color.White, modifier = Modifier.fillMaxSize(0.7f))
+        }
+    }
+}
+
+private const val THUMB_SIDE = 160
+private val thumbs = android.util.LruCache<String, ImageBitmap>(400)
+
+/**
+ * A small photo for long lists, decoded off the main thread and kept in memory, so scrolling
+ * through hundreds of people stays smooth.
+ */
+@Composable
+fun FaceThumb(contact: Contact, modifier: Modifier = Modifier) {
+    val version by Repo.filesVersion.collectAsState()
+    val key = "${contact.id}/$version"
+    val image by androidx.compose.runtime.produceState(thumbs.get(key), key) {
+        if (value == null) {
+            value = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                (loadImage(Repo.photoFile(contact.id), THUMB_SIDE) ?: loadImage(Repo.whatsAppPhotoFile(contact.id), THUMB_SIDE))
+                    ?.also { thumbs.put(key, it) }
+            }
+        }
+    }
+    val shown = image
+    if (shown != null) {
+        Image(shown, contact.name, modifier, contentScale = ContentScale.Crop)
+    } else {
+        Box(modifier.background(AppColors.Grey), contentAlignment = Alignment.Center) {
+            Icon(Icons.Filled.Person, null, tint = Color.White, modifier = Modifier.fillMaxSize(0.7f))
         }
     }
 }

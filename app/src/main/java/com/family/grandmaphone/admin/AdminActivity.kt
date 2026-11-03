@@ -21,8 +21,32 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
+import androidx.compose.runtime.LaunchedEffect
+import com.family.grandmaphone.ui.AppColors
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.background
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.material.icons.filled.Sms
+import androidx.compose.material.icons.filled.SystemUpdate
+import androidx.compose.material.icons.filled.Build
+import androidx.compose.material.icons.filled.Language
+import androidx.compose.material.icons.filled.Mic
+import androidx.compose.material.icons.filled.BatteryAlert
+import androidx.compose.material.icons.filled.SupportAgent
+import androidx.compose.material.icons.filled.Call
+import androidx.compose.material.icons.filled.People
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.Box
+import com.family.grandmaphone.whatsapp.WhatsApp
+import com.family.grandmaphone.ui.oneUiHeading
+import com.family.grandmaphone.ui.oneUiCardRows
+import com.family.grandmaphone.ui.oneUiCard
+import com.family.grandmaphone.ui.OneUiLazyPage
+import com.family.grandmaphone.ui.FaceThumb
 import com.family.grandmaphone.voice.VoiceMatcher
-import com.family.grandmaphone.ui.FaceImage
 import com.family.grandmaphone.data.PhoneNumbers
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Icon
@@ -101,19 +125,27 @@ class AdminActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         setContent {
             FacesTheme {
-                var inContacts by remember { mutableStateOf(false) }
+                var page by remember { mutableStateOf(AdminPage.HOME) }
                 var editing by remember { mutableStateOf<Contact?>(null) }
                 val contact = editing
-                when {
-                    contact != null -> {
-                        BackHandler { editing = null }
-                        ContactEditor(contact, onClose = { editing = null })
+                val home = { page = AdminPage.HOME }
+                if (contact != null) {
+                    BackHandler { editing = null }
+                    ContactEditor(contact, onClose = { editing = null })
+                } else {
+                    BackHandler(page != AdminPage.HOME) { home() }
+                    when (page) {
+                        AdminPage.HOME -> AdminHome(open = { page = it }, onBack = { finish() })
+                        AdminPage.CONTACTS -> ContactsPage(onEdit = { editing = it }, onBack = home)
+                        AdminPage.CALLING -> CallingPage(home)
+                        AdminPage.HELP -> HelpPage(home)
+                        AdminPage.BATTERY -> BatteryPage(home)
+                        AdminPage.SCREEN -> ScreenPage(home)
+                        AdminPage.VOICE -> VoicePage(home)
+                        AdminPage.SETUP -> SetupPage(home)
+                        AdminPage.UPDATES -> UpdatesPage(home)
+                        AdminPage.UNKNOWN -> UnknownMessagesPage(home)
                     }
-                    inContacts -> {
-                        BackHandler { inContacts = false }
-                        ContactsPage(onEdit = { editing = it }, onBack = { inContacts = false })
-                    }
-                    else -> AdminHome(onContacts = { inContacts = true }, onBack = { finish() })
                 }
             }
         }
@@ -171,28 +203,82 @@ private fun makeLoud(context: Context) {
     }
 }
 
+private enum class AdminPage { HOME, CONTACTS, CALLING, HELP, BATTERY, SCREEN, VOICE, SETUP, UPDATES, UNKNOWN }
+
+/** The settings home: categories like Samsung's Settings app, each opening its own page. */
 @Composable
-private fun AdminHome(onContacts: () -> Unit, onBack: () -> Unit) {
+private fun AdminHome(open: (AdminPage) -> Unit, onBack: () -> Unit) {
     val context = LocalContext.current
     val contacts by Repo.contacts.collectAsState()
+    val settings by Repo.settings.collectAsState()
     val inbox by Repo.inbox.collectAsState()
+    val toFix = remember { setupToFix(context) }
+    val unknown = inbox.count { it.contactId == null }
+
+    OneUiPage(stringResource(R.string.admin_title), onBack = onBack) {
+        OneUiGroup(stringResource(R.string.people)) {
+            CategoryRow(Icons.Filled.People, AppColors.Blue, R.string.contacts,
+                stringResource(R.string.contacts_count, Repo.visibleContacts(contacts, settings).size, contacts.size)) { open(AdminPage.CONTACTS) }
+            OneUiDivider()
+            CategoryRow(Icons.Filled.Call, AppColors.Green, R.string.cat_calling, stringResource(R.string.cat_calling_sub)) { open(AdminPage.CALLING) }
+        }
+        OneUiGroup(stringResource(R.string.grp_safety)) {
+            CategoryRow(Icons.Filled.SupportAgent, AppColors.Red, R.string.cat_help, stringResource(R.string.cat_help_sub)) { open(AdminPage.HELP) }
+            OneUiDivider()
+            CategoryRow(Icons.Filled.BatteryAlert, AppColors.Orange, R.string.cat_battery, stringResource(R.string.cat_battery_sub)) { open(AdminPage.BATTERY) }
+        }
+        OneUiGroup(stringResource(R.string.grp_voice_screen)) {
+            CategoryRow(Icons.Filled.Mic, AppColors.Purple, R.string.voice_title, stringResource(R.string.cat_voice_sub)) { open(AdminPage.VOICE) }
+            OneUiDivider()
+            CategoryRow(Icons.Filled.Language, AppColors.Teal, R.string.cat_screen, stringResource(R.string.cat_screen_sub)) { open(AdminPage.SCREEN) }
+        }
+        OneUiGroup(stringResource(R.string.grp_phone)) {
+            CategoryRow(Icons.Filled.Build, if (toFix > 0) AppColors.Red else AppColors.Grey, R.string.setup,
+                if (toFix > 0) stringResource(R.string.setup_todo, toFix) else stringResource(R.string.setup_ok)) { open(AdminPage.SETUP) }
+            OneUiDivider()
+            CategoryRow(Icons.Filled.SystemUpdate, AppColors.Blue, R.string.update_title, stringResource(R.string.version_now, BuildConfig.VERSION_NAME)) { open(AdminPage.UPDATES) }
+            OneUiDivider()
+            CategoryRow(Icons.Filled.Sms, AppColors.Grey, R.string.unknown_messages, stringResource(R.string.message_count, unknown)) { open(AdminPage.UNKNOWN) }
+        }
+    }
+}
+
+/** A category: a coloured round icon, a title and a short summary, like Samsung's Settings. */
+@Composable
+private fun CategoryRow(icon: ImageVector, color: Color, title: Int, subtitle: String, onClick: () -> Unit) {
+    Row(
+        Modifier.fillMaxWidth().clickable(onClick = onClick).padding(horizontal = 16.dp, vertical = 14.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(16.dp),
+    ) {
+        Box(Modifier.size(44.dp).clip(CircleShape).background(color), contentAlignment = Alignment.Center) {
+            Icon(icon, null, tint = Color.White, modifier = Modifier.size(26.dp))
+        }
+        Column(Modifier.weight(1f)) {
+            Text(stringResource(title), fontSize = 19.sp)
+            Text(subtitle, fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+    }
+}
+
+private fun setupToFix(context: Context): Int = listOf(
+    hasRole(context, RoleManager.ROLE_SMS),
+    hasPermissions(context),
+    hasWhatsAppAccess(context),
+    isBatteryExempt(context),
+    isLoud(context),
+).count { !it }
+
+@Composable
+private fun SetupPage(onBack: () -> Unit) {
+    val context = LocalContext.current
     var refresh by remember { mutableStateOf(0) }
     val launcher = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { refresh++ }
     val permissions = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { refresh++ }
-
-    OneUiPage(stringResource(R.string.admin_title), onBack = onBack) {
-        OneUiGroup {
-            val settings by Repo.settings.collectAsState()
-            OneUiRow(
-                stringResource(R.string.contacts),
-                subtitle = stringResource(R.string.contacts_count, Repo.visibleContacts(contacts, settings).size, contacts.size),
-                onClick = onContacts,
-            )
-        }
-
-        // Reading refresh makes this section update after returning from a system dialog.
+    OneUiPage(stringResource(R.string.setup), onBack = onBack) {
+        // Reading refresh makes this page update after returning from a system dialog.
         key(refresh) {
-            OneUiGroup(stringResource(R.string.setup)) {
+            OneUiGroup {
                 SetupItem(R.string.role_sms, hasRole(context, RoleManager.ROLE_SMS)) {
                     launcher.launch(context.getSystemService(RoleManager::class.java).createRequestRoleIntent(RoleManager.ROLE_SMS))
                 }
@@ -222,12 +308,23 @@ private fun AdminHome(onContacts: () -> Unit, onBack: () -> Unit) {
                 )
             }
         }
+    }
+}
 
+@Composable
+private fun UpdatesPage(onBack: () -> Unit) {
+    var refresh by remember { mutableStateOf(0) }
+    val launcher = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { refresh++ }
+    OneUiPage(stringResource(R.string.update_title), onBack = onBack) {
         key(refresh) { UpdateSection { launcher.launch(it) } }
+    }
+}
 
-        SettingsSection()
-
-        OneUiGroup(stringResource(R.string.unknown_messages)) {
+@Composable
+private fun UnknownMessagesPage(onBack: () -> Unit) {
+    val inbox by Repo.inbox.collectAsState()
+    OneUiPage(stringResource(R.string.unknown_messages), onBack = onBack) {
+        OneUiGroup {
             val unknown = inbox.filter { it.contactId == null }.sortedByDescending { it.time }
             if (unknown.isEmpty()) OneUiRow(stringResource(R.string.none))
             unknown.forEachIndexed { index, item ->
@@ -245,7 +342,7 @@ private fun UpdateSection(open: (Intent) -> Unit) {
     val scope = rememberCoroutineScope()
     val state by Updater.state.collectAsState()
     val busy = state is Updater.State.Checking || state is Updater.State.Downloading || state is Updater.State.Installing
-    OneUiGroup(stringResource(R.string.update_title)) {
+    OneUiGroup {
         if (!context.packageManager.canRequestPackageInstalls()) {
             SetupItem(R.string.allow_updates, false) {
                 open(Intent(AndroidSettings.ACTION_MANAGE_UNKNOWN_APP_SOURCES, Uri.parse("package:${context.packageName}")))
@@ -271,6 +368,7 @@ private fun UpdateSection(open: (Intent) -> Unit) {
 /**
  * Everyone from the phone's contacts. Tapping a person switches whether they appear on her
  * screen. Those who appear are listed first, and the search finds anyone by name or number.
+ * Only the rows on screen are built, so hundreds of contacts stay smooth.
  */
 @Composable
 private fun ContactsPage(onEdit: (Contact) -> Unit, onBack: () -> Unit) {
@@ -279,28 +377,38 @@ private fun ContactsPage(onEdit: (Contact) -> Unit, onBack: () -> Unit) {
     val withoutNumber by Repo.contactsWithoutNumber.collectAsState()
     val settings by Repo.settings.collectAsState()
     var query by remember { mutableStateOf("") }
-    val words = VoiceMatcher.normalize(query)
-    fun matches(name: String, phone: String = "") = words.isEmpty() ||
-        VoiceMatcher.normalize(name).joinToString(" ").let { text -> words.all { it in text } } ||
-        (PhoneNumbers.digits(query).length >= 3 && PhoneNumbers.digits(phone).contains(PhoneNumbers.digits(query)))
-    val found = contacts.filter { matches(it.name, it.phone) }.sortedBy { it.name.lowercase() }
-    val (shown, notShown) = found.partition { it.isShown(settings) }
-    val noNumber = withoutNumber.filter { matches(it.name) }.sortedBy { it.name.lowercase() }
+    val hasWhatsApp = remember { WhatsApp.isInstalled(context) }
+    // Names are prepared for searching once, not on every keystroke.
+    val searchable = remember(contacts) {
+        contacts.sortedBy { it.name.lowercase() }.map { it to VoiceMatcher.normalize(it.name).joinToString(" ") }
+    }
+    val searchableWithout = remember(withoutNumber) {
+        withoutNumber.sortedBy { it.name.lowercase() }.map { it to VoiceMatcher.normalize(it.name).joinToString(" ") }
+    }
+    val words = remember(query) { VoiceMatcher.normalize(query) }
+    val digits = remember(query) { PhoneNumbers.digits(query) }
+    fun matches(text: String, phone: String) = words.isEmpty() || words.all { it in text } ||
+        (digits.length >= 3 && PhoneNumbers.digits(phone).contains(digits))
+    val found = remember(searchable, words) { searchable.filter { (c, text) -> matches(text, c.phone) }.map { it.first } }
+    val (shown, notShown) = remember(found, settings) { found.partition { it.isShown(settings) } }
+    val noNumber = remember(searchableWithout, words) { searchableWithout.filter { (_, text) -> matches(text, "") }.map { it.first } }
 
-    OneUiPage(stringResource(R.string.contacts), onBack = onBack) {
-        OutlinedTextField(
-            query,
-            { query = it },
-            Modifier.fillMaxWidth().padding(vertical = 8.dp),
-            placeholder = { Text(stringResource(R.string.search_contacts)) },
-            leadingIcon = { Icon(Icons.Filled.Search, null) },
-            trailingIcon = {
-                if (query.isNotEmpty()) IconButton({ query = "" }) { Icon(Icons.Filled.Close, stringResource(R.string.cancel)) }
-            },
-            singleLine = true,
-            shape = RoundedCornerShape(28.dp),
-        )
-        OneUiGroup {
+    OneUiLazyPage(stringResource(R.string.contacts), onBack = onBack) {
+        item(key = "search") {
+            OutlinedTextField(
+                query,
+                { query = it },
+                Modifier.fillMaxWidth().padding(vertical = 8.dp),
+                placeholder = { Text(stringResource(R.string.search_contacts)) },
+                leadingIcon = { Icon(Icons.Filled.Search, null) },
+                trailingIcon = {
+                    if (query.isNotEmpty()) IconButton({ query = "" }) { Icon(Icons.Filled.Close, stringResource(R.string.cancel)) }
+                },
+                singleLine = true,
+                shape = RoundedCornerShape(28.dp),
+            )
+        }
+        oneUiCard("mode") {
             LabeledSwitch(R.string.pick_contacts, settings.pickContacts, R.string.pick_contacts_explained) {
                 Repo.setPickContacts(it)
             }
@@ -314,40 +422,31 @@ private fun ContactsPage(onEdit: (Contact) -> Unit, onBack: () -> Unit) {
         }
         if (found.isNotEmpty()) {
             // With hundreds of contacts, switch everyone the search found at once.
-            OneUiGroup {
+            oneUiCard("all") {
                 OneUiRow(
-                    stringResource(if (words.isEmpty()) R.string.all_off else R.string.found_off, notShown.size + shown.size),
+                    stringResource(if (words.isEmpty()) R.string.all_off else R.string.found_off, found.size),
                     titleColor = MaterialTheme.colorScheme.primary,
                     onClick = { Repo.setShownAll(found, false) },
                 )
                 OneUiDivider()
                 OneUiRow(
-                    stringResource(if (words.isEmpty()) R.string.all_on else R.string.found_on, notShown.size + shown.size),
+                    stringResource(if (words.isEmpty()) R.string.all_on else R.string.found_on, found.size),
                     titleColor = MaterialTheme.colorScheme.primary,
                     onClick = { Repo.setShownAll(found, true) },
                 )
             }
         }
         if (shown.isNotEmpty()) {
-            OneUiGroup(stringResource(R.string.on_her_screen, shown.size)) {
-                shown.forEachIndexed { index, contact ->
-                    if (index > 0) OneUiDivider()
-                    PersonRow(contact, true, onEdit)
-                }
-            }
+            oneUiHeading("shown-title", context.getString(R.string.on_her_screen, shown.size))
+            oneUiCardRows(shown, key = { "on-" + it.id }) { PersonRow(it, true, hasWhatsApp, onEdit) }
         }
         if (notShown.isNotEmpty()) {
-            OneUiGroup(stringResource(R.string.not_on_her_screen, notShown.size)) {
-                notShown.forEachIndexed { index, contact ->
-                    if (index > 0) OneUiDivider()
-                    PersonRow(contact, false, onEdit)
-                }
-            }
+            oneUiHeading("off-title", context.getString(R.string.not_on_her_screen, notShown.size))
+            oneUiCardRows(notShown, key = { "off-" + it.id }) { PersonRow(it, false, hasWhatsApp, onEdit) }
         }
         if (noNumber.isNotEmpty()) {
-            OneUiGroup {
-            noNumber.forEachIndexed { index, person ->
-                if (index > 0) OneUiDivider()
+            item(key = "gap") { Box(Modifier.height(12.dp)) }
+            oneUiCardRows(noNumber, key = { "none-" + it.id }) { person ->
                 OneUiRow(
                     person.name,
                     subtitle = stringResource(R.string.no_number),
@@ -357,19 +456,17 @@ private fun ContactsPage(onEdit: (Contact) -> Unit, onBack: () -> Unit) {
                     },
                 )
             }
-            }
         }
-        if (found.isEmpty() && noNumber.isEmpty()) OneUiGroup { OneUiRow(stringResource(R.string.none)) }
+        if (found.isEmpty() && noNumber.isEmpty()) oneUiCard("empty") { OneUiRow(stringResource(R.string.none)) }
     }
 }
 
 /** A face, name and number. Tapping switches whether they appear. The pencil opens their settings. */
 @Composable
-private fun PersonRow(contact: Contact, shown: Boolean, onEdit: (Contact) -> Unit) {
-    val context = LocalContext.current
+private fun PersonRow(contact: Contact, shown: Boolean, hasWhatsApp: Boolean, onEdit: (Contact) -> Unit) {
     val route = when {
         Calling.route(contact) == CallRoute.PHONE -> null
-        Calling.canCall(context, contact) -> stringResource(R.string.calls_by_whatsapp)
+        hasWhatsApp -> stringResource(R.string.calls_by_whatsapp)
         else -> stringResource(R.string.needs_whatsapp)
     }
     Row(
@@ -377,7 +474,7 @@ private fun PersonRow(contact: Contact, shown: Boolean, onEdit: (Contact) -> Uni
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        FaceImage(contact, Modifier.size(52.dp).clip(CircleShape))
+        FaceThumb(contact, Modifier.size(52.dp).clip(CircleShape))
         Column(Modifier.weight(1f)) {
             Text(contact.name, fontSize = 18.sp)
             Text(
@@ -406,33 +503,104 @@ private fun UnknownMessage(item: InboxItem) {
     OneUiRow(item.text ?: item.kind.name, subtitle = "${item.address}  $time")
 }
 
+/** A settings page that saves by itself whenever one of [values] changes. There's no Save button. */
 @Composable
-private fun SettingsSection() {
-    val settings by Repo.settings.collectAsState()
-    var countryCode by remember { mutableStateOf(settings.countryCode) }
-    var language by remember { mutableStateOf(settings.speechLanguage) }
-    var emergency by remember { mutableStateOf(settings.emergencyNumber) }
-    var family by remember { mutableStateOf(settings.familyNumber) }
-    var help by remember { mutableStateOf(settings.helpMessage) }
-    var charge by remember { mutableStateOf(settings.chargePrompt) }
-    var favourites by remember { mutableStateOf(settings.favouritesOnly) }
-    var apiKey by remember { mutableStateOf(settings.voiceApiKey) }
-    var model by remember { mutableStateOf(settings.voiceModel) }
-    var hearsAudio by remember { mutableStateOf(settings.voiceHearsAudio) }
-    var keyCheck by remember { mutableStateOf<VoiceResolver.KeyCheck?>(null) }
-    var checking by remember { mutableStateOf(false) }
-    var voiceReady by remember { mutableStateOf<Boolean?>(null) }
-    val context = LocalContext.current
-    val scope = rememberCoroutineScope()
+private fun SettingsPage(
+    title: Int,
+    onBack: () -> Unit,
+    values: List<Any>,
+    save: () -> Unit,
+    content: @Composable ColumnScope.() -> Unit,
+) {
+    val latestSave by rememberUpdatedState(save)
+    LaunchedEffect(values) { latestSave() }
+    OneUiPage(stringResource(title), onBack = onBack, content = content)
+}
 
-    OneUiGroup(stringResource(R.string.settings)) {
-        FieldPadding {
-            Field(R.string.country_code, countryCode) { countryCode = it }
-            Field(R.string.speech_language, language) {
-                language = it
-                voiceReady = null
+private fun updateSettings(change: (Settings) -> Settings) = Repo.saveSettings(change(Repo.settings.value))
+
+@Composable
+private fun CallingPage(onBack: () -> Unit) {
+    val context = LocalContext.current
+    val settings = remember { Repo.settings.value }
+    var countryCode by remember { mutableStateOf(settings.countryCode) }
+    SettingsPage(R.string.cat_calling, onBack, listOf(countryCode), save = { updateSettings { it.copy(countryCode = countryCode.trim()) } }) {
+        OneUiGroup {
+            FieldPadding { Field(R.string.country_code, countryCode) { countryCode = it } }
+            OneUiDivider()
+            OneUiRow(stringResource(R.string.turkish_numbers))
+        }
+        OneUiGroup {
+            OneUiRow(
+                stringResource(R.string.keypad),
+                titleColor = MaterialTheme.colorScheme.primary,
+                onClick = { context.startActivity(Intent(context, DialActivity::class.java)) },
+            )
+        }
+    }
+}
+
+@Composable
+private fun HelpPage(onBack: () -> Unit) {
+    val settings = remember { Repo.settings.value }
+    var emergency by remember { mutableStateOf(settings.emergencyNumber) }
+    var help by remember { mutableStateOf(settings.helpMessage) }
+    val contacts by Repo.contacts.collectAsState()
+    SettingsPage(R.string.cat_help, onBack, listOf(emergency, help), save = {
+        updateSettings { it.copy(emergencyNumber = emergency.trim(), helpMessage = help.trim()) }
+    }) {
+        OneUiGroup {
+            FieldPadding {
+                Field(R.string.emergency_number, emergency) { emergency = it }
+                Field(R.string.help_message, help, stringResource(R.string.default_help_message)) { help = it }
             }
         }
+        val helpers = contacts.filter { it.helpsInEmergency }
+        OneUiGroup(stringResource(R.string.helpers)) {
+            OneUiRow(
+                if (helpers.isEmpty()) stringResource(R.string.no_helpers) else helpers.joinToString(", ") { it.name },
+                subtitle = stringResource(R.string.helpers_explained),
+            )
+        }
+    }
+}
+
+@Composable
+private fun BatteryPage(onBack: () -> Unit) {
+    val settings = remember { Repo.settings.value }
+    var family by remember { mutableStateOf(settings.familyNumber) }
+    var charge by remember { mutableStateOf(settings.chargePrompt) }
+    SettingsPage(R.string.cat_battery, onBack, listOf(family, charge), save = {
+        updateSettings { it.copy(familyNumber = family.trim(), chargePrompt = charge.trim()) }
+    }) {
+        OneUiGroup {
+            FieldPadding {
+                Field(R.string.family_number, family) { family = it }
+                Field(R.string.charge_prompt, charge, stringResource(R.string.default_charge_prompt)) { charge = it }
+            }
+            OneUiDivider()
+            ClipRecorder(R.string.record_charge_prompt, Repo.chargeClipFile())
+        }
+    }
+}
+
+@Composable
+private fun ScreenPage(onBack: () -> Unit) {
+    val context = LocalContext.current
+    val settings = remember { Repo.settings.value }
+    var language by remember { mutableStateOf(settings.speechLanguage) }
+    var favourites by remember { mutableStateOf(settings.favouritesOnly) }
+    var voiceReady by remember { mutableStateOf<Boolean?>(null) }
+    SettingsPage(R.string.cat_screen, onBack, listOf(language, favourites), save = {
+        updateSettings { it.copy(speechLanguage = language.trim(), favouritesOnly = favourites) }
+    }) {
+        OneUiGroup {
+            FieldPadding {
+                Field(R.string.speech_language, language) {
+                    language = it
+                    voiceReady = null
+                }
+            }
         OneUiRow(
             stringResource(R.string.test_voice),
             subtitle = voiceReady?.let { stringResource(if (it) R.string.voice_ready else R.string.voice_missing) },
@@ -445,36 +613,43 @@ private fun SettingsSection() {
                 Speaker.tryVoice(context, tag, text) { voiceReady = it }
             },
         )
-        OneUiDivider()
-        FieldPadding {
-            Field(R.string.emergency_number, emergency) { emergency = it }
-            Field(R.string.family_number, family) { family = it }
-            Field(R.string.help_message, help, stringResource(R.string.default_help_message)) { help = it }
-            Field(R.string.charge_prompt, charge, stringResource(R.string.default_charge_prompt)) { charge = it }
         }
-        OneUiDivider()
-        ClipRecorder(R.string.record_charge_prompt, Repo.chargeClipFile())
-        OneUiDivider()
-        LabeledSwitch(R.string.favourites_only, favourites) { favourites = it }
+        OneUiGroup {
+            LabeledSwitch(R.string.favourites_only, favourites) { favourites = it }
+        }
     }
+}
 
-    OneUiGroup(stringResource(R.string.voice_title)) {
-        OneUiRow(stringResource(R.string.voice_explained))
-        OneUiDivider()
-        FieldPadding {
-            FieldLabel(R.string.api_key)
-            OutlinedTextField(
-                apiKey,
-                {
-                    apiKey = it
-                    keyCheck = null
-                },
-                Modifier.fillMaxWidth(),
-                singleLine = true,
-                visualTransformation = PasswordVisualTransformation(),
-            )
-            Field(R.string.voice_model, model, VoiceRequest.DEFAULT_MODEL) { model = it }
+@Composable
+private fun VoicePage(onBack: () -> Unit) {
+    val settings = remember { Repo.settings.value }
+    var apiKey by remember { mutableStateOf(settings.voiceApiKey) }
+    var model by remember { mutableStateOf(settings.voiceModel) }
+    var hearsAudio by remember { mutableStateOf(settings.voiceHearsAudio) }
+    var keyCheck by remember { mutableStateOf<VoiceResolver.KeyCheck?>(null) }
+    var checking by remember { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
+    SettingsPage(R.string.voice_title, onBack, listOf(apiKey, model, hearsAudio), save = {
+        updateSettings { it.copy(voiceApiKey = apiKey.trim(), voiceModel = model.trim(), voiceHearsAudio = hearsAudio) }
+    }) {
+        OneUiGroup {
+            OneUiRow(stringResource(R.string.voice_explained))
         }
+        OneUiGroup {
+            FieldPadding {
+                FieldLabel(R.string.api_key)
+                OutlinedTextField(
+                    apiKey,
+                    {
+                        apiKey = it
+                        keyCheck = null
+                    },
+                    Modifier.fillMaxWidth(),
+                    singleLine = true,
+                    visualTransformation = PasswordVisualTransformation(),
+                )
+                Field(R.string.voice_model, model, VoiceRequest.DEFAULT_MODEL) { model = it }
+            }
         OneUiRow(
             stringResource(R.string.test_key),
             subtitle = keyCheck?.let {
@@ -498,22 +673,11 @@ private fun SettingsSection() {
                 }
             },
         )
-        OneUiDivider()
-        LabeledSwitch(R.string.voice_hears_audio, hearsAudio, R.string.voice_hears_audio_explained) { hearsAudio = it }
+        }
+        OneUiGroup {
+            LabeledSwitch(R.string.voice_hears_audio, hearsAudio, R.string.voice_hears_audio_explained) { hearsAudio = it }
+        }
     }
-
-    Button(
-        onClick = {
-            Repo.saveSettings(
-                Settings(
-                    countryCode.trim(), language.trim(), emergency.trim(), family.trim(), help.trim(), charge.trim(),
-                    favourites, apiKey.trim(), model.trim(), hearsAudio,
-                    pickContacts = Repo.settings.value.pickContacts,
-                )
-            )
-        },
-        Modifier.fillMaxWidth().padding(vertical = 12.dp),
-    ) { Text(stringResource(R.string.save)) }
 }
 
 @Composable
@@ -583,8 +747,10 @@ private fun ContactEditor(original: Contact, onClose: () -> Unit) {
     val id = original.id
     val photo = rememberImage(Repo.photoFile(id)) ?: rememberImage(Repo.whatsAppPhotoFile(id))
     val save = {
+        // Starts from the latest copy, in case the phone's contacts changed while editing.
+        val current = Repo.contact(id) ?: original
         Repo.saveContact(
-            (if (Repo.settings.value.pickContacts) original.copy(picked = shown) else original.copy(hidden = !shown)).copy(
+            (if (Repo.settings.value.pickContacts) current.copy(picked = shown) else current.copy(hidden = !shown)).copy(
                 helpsInEmergency = helper,
                 aliases = aliases.split(",").map { it.trim() }.filter { it.isNotEmpty() },
             )
@@ -637,14 +803,9 @@ private fun ContactEditor(original: Contact, onClose: () -> Unit) {
                 )
             }
         }
-        Button(
-            onClick = {
-                save()
-                onClose()
-            },
-            Modifier.fillMaxWidth().padding(vertical = 12.dp),
-        ) { Text(stringResource(R.string.save)) }
     }
+    // Saves by itself as the family changes things. There's no Save button.
+    LaunchedEffect(shown, helper, aliases) { save() }
 }
 
 @Composable

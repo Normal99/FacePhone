@@ -108,4 +108,23 @@
     <string name="all_on">Turn everyone on (%1$d)</string>
     <string name="found_off">Turn these %1$d off</string>
     <string name="found_on">Turn these %1$d on</string>
+    <string name="cat_calling">Calling</string>
+    <string name="cat_calling_sub">Home country code, keypad</string>
+    <string name="turkish_numbers">Turkish mobile numbers written as 05xx xxx xx xx are recognised as Turkish and called over WhatsApp.</string>
+    <string name="cat_help">Help and emergency</string>
+    <string name="cat_help_sub">Emergency number, help message, helpers</string>
+    <string name="helpers">Who the help button calls</string>
+    <string name="no_helpers">Nobody yet</string>
+    <string name="helpers_explained">Turn on \"Call and text this person for help\" in a person\'s settings under Contacts.</string>
+    <string name="cat_battery">Battery</string>
+    <string name="cat_battery_sub">Low battery warning and text</string>
+    <string name="cat_screen">Screen and language</string>
+    <string name="cat_screen_sub">Language, speech voice, starred only</string>
+    <string name="cat_voice_sub">AI key, model and listening</string>
+    <string name="grp_safety">Safety</string>
+    <string name="grp_voice_screen">Voice and screen</string>
+    <string name="grp_phone">Phone</string>
+    <string name="setup_todo">%1$d things to fix</string>
+    <string name="setup_ok">All done</string>
+    <string name="message_count">%1$d messages</string>
 </resources>

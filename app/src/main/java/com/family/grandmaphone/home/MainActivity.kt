@@ -54,6 +54,7 @@ import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Stop
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.SupportAgent
 import androidx.compose.material.icons.filled.Videocam
 import androidx.compose.material.icons.filled.VolumeUp
@@ -236,6 +237,14 @@ private fun FacesScreen(go: (Screen) -> Unit) {
             item(span = { GridItemSpan(2) }) {
                 Box(Modifier.fillMaxWidth().height(120.dp), contentAlignment = Alignment.Center) {
                     Text(stringResource(R.string.people), fontSize = 36.sp, fontWeight = FontWeight.Light)
+                    // The family's settings.
+                    Box(
+                        Modifier.align(Alignment.CenterStart).size(64.dp).clip(CircleShape)
+                            .background(AppColors.Grey).forgivingTap { openAdmin() },
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Icon(Icons.Filled.Settings, stringResource(R.string.settings), tint = Color.White, modifier = Modifier.size(36.dp))
+                    }
                 }
             }
             items(contacts, key = { it.id }) { contact ->

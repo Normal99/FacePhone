@@ -110,4 +110,23 @@
     <string name="all_on">Herkesi aç (%1$d)</string>
     <string name="found_off">Bulunan %1$d kişiyi kapat</string>
     <string name="found_on">Bulunan %1$d kişiyi aç</string>
+    <string name="cat_calling">Arama</string>
+    <string name="cat_calling_sub">Ülke kodu, tuş takımı</string>
+    <string name="turkish_numbers">05xx xxx xx xx şeklinde yazılan Türk cep numaraları Türk numarası olarak tanınır ve WhatsApp ile aranır.</string>
+    <string name="cat_help">Yardım ve acil durum</string>
+    <string name="cat_help_sub">Acil numara, yardım mesajı, yardımcılar</string>
+    <string name="helpers">Yardım düğmesinin aradığı kişiler</string>
+    <string name="no_helpers">Henüz kimse yok</string>
+    <string name="helpers_explained">Kişiler bölümünde kişinin ayarlarından \"Yardım düğmesine basınca bu kişiyi ara ve mesaj at\" seçeneğini açın.</string>
+    <string name="cat_battery">Pil</string>
+    <string name="cat_battery_sub">Şarj azalınca uyarı ve mesaj</string>
+    <string name="cat_screen">Ekran ve dil</string>
+    <string name="cat_screen_sub">Dil, konuşma sesi, yalnızca yıldızlılar</string>
+    <string name="cat_voice_sub">Yapay zeka anahtarı, model ve dinleme</string>
+    <string name="grp_safety">Güvenlik</string>
+    <string name="grp_voice_screen">Ses ve ekran</string>
+    <string name="grp_phone">Telefon</string>
+    <string name="setup_todo">%1$d eksik var</string>
+    <string name="setup_ok">Hepsi tamam</string>
+    <string name="message_count">%1$d mesaj</string>
 </resources>

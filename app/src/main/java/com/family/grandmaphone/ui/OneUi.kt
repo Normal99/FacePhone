@@ -7,6 +7,11 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListScope
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
@@ -124,6 +129,72 @@ fun OneUiPage(title: String, onBack: (() -> Unit)? = null, content: @Composable 
                 }
                 if (collapsed) Text(title, fontSize = 20.sp, fontWeight = FontWeight.SemiBold, maxLines = 1)
             }
+        }
+    }
+}
+
+/**
+ * [OneUiPage] for long lists. Only the rows on screen are built, so hundreds of people scroll
+ * smoothly. Use [oneUiHeading], [oneUiCard] and [oneUiCardRows] for its contents.
+ */
+@Composable
+fun OneUiLazyPage(title: String, onBack: (() -> Unit)? = null, content: LazyListScope.() -> Unit) {
+    val list = rememberLazyListState()
+    Box(Modifier.fillMaxSize()) {
+        LazyColumn(Modifier.fillMaxSize(), list, contentPadding = PaddingValues(start = 12.dp, end = 12.dp, bottom = 24.dp)) {
+            item(key = "title") {
+                Box(Modifier.fillMaxWidth().height(200.dp), contentAlignment = Alignment.Center) {
+                    Text(title, fontSize = 36.sp, fontWeight = FontWeight.Light, textAlign = TextAlign.Center)
+                }
+            }
+            content()
+        }
+        val collapsed = list.firstVisibleItemIndex > 0 || list.firstVisibleItemScrollOffset > 140
+        Row(
+            Modifier.fillMaxWidth()
+                .background(if (collapsed) MaterialTheme.colorScheme.background else Color.Transparent)
+                .padding(horizontal = 4.dp).height(56.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            if (onBack != null) {
+                IconButton(onClick = onBack) { Icon(Icons.Filled.ArrowBack, null) }
+            } else {
+                Box(Modifier.padding(start = 16.dp))
+            }
+            if (collapsed) Text(title, fontSize = 20.sp, fontWeight = FontWeight.SemiBold, maxLines = 1)
+        }
+    }
+}
+
+fun LazyListScope.oneUiHeading(key: String, title: String) {
+    item(key = key) {
+        Text(
+            title,
+            Modifier.padding(start = 20.dp, top = 16.dp, bottom = 6.dp),
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            fontSize = 14.sp,
+            fontWeight = FontWeight.Medium,
+        )
+    }
+}
+
+/** A small card built in one go, for a few fixed rows. */
+fun LazyListScope.oneUiCard(key: String, content: @Composable ColumnScope.() -> Unit) {
+    item(key = key) { OneUiGroup(content = content) }
+}
+
+/** A card whose rows are built only when they scroll into view. */
+fun <T> LazyListScope.oneUiCardRows(items: List<T>, key: (T) -> Any, row: @Composable (T) -> Unit) {
+    itemsIndexed(items, key = { _, item -> key(item) }) { index, item ->
+        val top = if (index == 0) 26.dp else 0.dp
+        val bottom = if (index == items.lastIndex) 26.dp else 0.dp
+        Column(
+            Modifier.fillMaxWidth()
+                .clip(RoundedCornerShape(topStart = top, topEnd = top, bottomStart = bottom, bottomEnd = bottom))
+                .background(MaterialTheme.colorScheme.surface)
+        ) {
+            if (index > 0) OneUiDivider()
+            row(item)
         }
     }
 }

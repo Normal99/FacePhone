@@ -4,6 +4,8 @@ import com.family.grandmaphone.call.CallEntry
 import com.family.grandmaphone.call.CallHistory
 import com.family.grandmaphone.call.CallKind
 import com.family.grandmaphone.data.Contact
+import com.family.grandmaphone.data.Repo
+import com.family.grandmaphone.data.Settings
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
@@ -23,5 +25,16 @@ class RecentFirstTest {
         assertEquals(listOf(can, ayse, ali), CallHistory.recentFirst(listOf(ali, ayse, can), calls, mapOf("c" to 400L)))
         assertEquals(listOf(ali, ayse, can), CallHistory.recentFirst(listOf(ali, ayse, can), emptyList(), emptyMap()))
         assertEquals(true, com.family.grandmaphone.data.PhoneNumbers.same("92345678", "+47 923 45 678"))
+    }
+
+    @Test
+    fun pickModeShowsOnlyPickedPeople() {
+        val picked = ali.copy(picked = true)
+        val hidden = ayse.copy(hidden = true)
+        val everyone = listOf(picked, hidden, can)
+        assertEquals(listOf(picked, can), Repo.visibleContacts(everyone, Settings()))
+        assertEquals(listOf(picked), Repo.visibleContacts(everyone, Settings(pickContacts = true)))
+        assertEquals(true, can.isShown(Settings()))
+        assertEquals(false, can.isShown(Settings(pickContacts = true)))
     }
 }

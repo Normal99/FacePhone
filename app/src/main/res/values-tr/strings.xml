@@ -99,4 +99,11 @@
     <string name="update_downloading">%1$s indiriliyor…</string>
     <string name="update_installing">Yükleniyor. Android sorunca Yükle\'ye dokunun.</string>
     <string name="update_failed">Güncelleme başarısız: %1$s</string>
+    <string name="pick_contacts">Kimin görüneceğini seç</string>
+    <string name="pick_contacts_explained">Açık: yalnızca açtığınız kişiler ekranında görünür, yeni kişiler kapalı gelir. Kapalı: rehberdeki herkes görünür, kapattıklarınız hariç.</string>
+    <string name="contacts_count">%2$d kişiden %1$d kişi ekranında</string>
+    <string name="search_contacts">Ad veya numara ile ara</string>
+    <string name="on_her_screen">Ekranında (%1$d)</string>
+    <string name="not_on_her_screen">Ekranında değil (%1$d)</string>
+    <string name="edit">Düzenle</string>
 </resources>

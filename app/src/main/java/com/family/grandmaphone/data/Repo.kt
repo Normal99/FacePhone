@@ -39,6 +39,7 @@ object Repo {
                 obj.optString("nickname"),
                 obj.optJSONArray("aliases")?.strings().orEmpty(),
                 obj.optBoolean("whatsappOnly"),
+                obj.optBoolean("picked"),
             )
         }
         inbox.value = json.getJSONArray("inbox").map { obj ->
@@ -67,6 +68,7 @@ object Repo {
             s.optString("voiceApiKey"),
             s.optString("voiceModel"),
             s.optBoolean("voiceHearsAudio"),
+            s.optBoolean("pickContacts"),
         )
     }
 
@@ -79,6 +81,7 @@ object Repo {
                 .put("whatsapp", it.usesWhatsApp).put("help", it.helpsInEmergency)
                 .put("starred", it.starred).put("hidden", it.hidden).put("nickname", it.nickname)
                 .put("aliases", JSONArray(it.aliases)).put("whatsappOnly", it.fromWhatsAppOnly)
+                .put("picked", it.picked)
         }))
         json.put("inbox", JSONArray(inbox.value.map {
             JSONObject()
@@ -94,7 +97,8 @@ object Repo {
             .put("emergencyNumber", s.emergencyNumber).put("familyNumber", s.familyNumber)
             .put("helpMessage", s.helpMessage).put("chargePrompt", s.chargePrompt)
             .put("favouritesOnly", s.favouritesOnly).put("voiceApiKey", s.voiceApiKey)
-            .put("voiceModel", s.voiceModel).put("voiceHearsAudio", s.voiceHearsAudio))
+            .put("voiceModel", s.voiceModel).put("voiceHearsAudio", s.voiceHearsAudio)
+            .put("pickContacts", s.pickContacts))
         val temp = File(root, "state.json.tmp")
         temp.writeText(json.toString())
         temp.renameTo(stateFile)
@@ -114,11 +118,26 @@ object Repo {
 
     /** Faces to show her: favourites first, then by name. */
     fun visibleContacts(all: List<Contact>, settings: Settings): List<Contact> =
-        all.filterNot { it.hidden }
+        all.filter { it.isShown(settings) }
             .filter { !settings.favouritesOnly || it.starred }
             .sortedWith(compareBy<Contact> { !it.starred }.thenBy { it.name.lowercase() })
 
     /** Updates the family's own settings for a person. */
+    /** The first time, the people already showing start out picked, so her screen doesn't empty. */
+    @Synchronized
+    fun setPickContacts(on: Boolean) {
+        if (on && contacts.value.none { it.picked }) {
+            contacts.value = contacts.value.map { it.copy(picked = !it.hidden) }
+        }
+        settings.value = settings.value.copy(pickContacts = on)
+        save()
+    }
+
+    @Synchronized
+    fun setShown(contact: Contact, shown: Boolean) = saveContact(
+        if (settings.value.pickContacts) contact.copy(picked = shown) else contact.copy(hidden = !shown)
+    )
+
     @Synchronized
     fun saveContact(contact: Contact) {
         contacts.value = contacts.value.map { if (it.id == contact.id) contact else it }
@@ -135,6 +154,7 @@ object Repo {
                 person.id, person.name, person.phone, person.usesWhatsApp,
                 old?.helpsInEmergency ?: false, person.starred, old?.hidden ?: false,
                 person.nickname, old?.aliases.orEmpty(), person.fromWhatsAppOnly,
+                old?.picked ?: false,
             )
         }
         val ids = updated.map { it.id }.toSet()

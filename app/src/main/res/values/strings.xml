@@ -97,4 +97,11 @@
     <string name="update_downloading">Downloading %1$s…</string>
     <string name="update_installing">Installing. Tap Install when Android asks.</string>
     <string name="update_failed">Update failed: %1$s</string>
+    <string name="pick_contacts">Choose who appears</string>
+    <string name="pick_contacts_explained">On: only the people you switch on appear on her screen, and new contacts stay off. Off: everyone in the phone\'s contacts appears unless you switch them off.</string>
+    <string name="contacts_count">%1$d of %2$d on her screen</string>
+    <string name="search_contacts">Search by name or number</string>
+    <string name="on_her_screen">On her screen (%1$d)</string>
+    <string name="not_on_her_screen">Not on her screen (%1$d)</string>
+    <string name="edit">Edit</string>
 </resources>

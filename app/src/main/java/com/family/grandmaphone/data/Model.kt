@@ -13,7 +13,11 @@ data class Contact(
     val aliases: List<String> = emptyList(),
     /** In WhatsApp but not saved in the phone's own contacts, so WhatsApp is how to call them. */
     val fromWhatsAppOnly: Boolean = false,
-)
+    /** Switched on by the family when they choose who appears, instead of showing everyone. */
+    val picked: Boolean = false,
+) {
+    fun isShown(settings: Settings) = if (settings.pickContacts) picked else !hidden
+}
 
 enum class MessageKind { VOICE, PICTURE, VIDEO, TEXT }
 
@@ -40,6 +44,8 @@ data class Settings(
     val voiceApiKey: String = "",
     val voiceModel: String = "",
     val voiceHearsAudio: Boolean = false,
+    /** Only the people the family switched on appear, so new contacts stay off her screen. */
+    val pickContacts: Boolean = false,
 )
 
 object ContactMatch {

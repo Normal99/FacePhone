@@ -137,10 +137,13 @@
     <string name="retake_photo">Yeni fotoğraf çek</string>
     <string name="pick_photo">Galeriden fotoğraf seç</string>
     <string name="widget_description">Kişilerinin yüzleri ana ekranda bir sayfada. Bir yüze dokununca o kişi açılır.</string>
-    <string name="support_number">Uygulama ile ilgili yardım numarası (ekrandaki soru işareti)</string>
-    <string name="app_help">Telefon için yardım</string>
-    <string name="app_help_explained">Telefonda bir sorun mu var? Yardım için ara.</string>
-    <string name="call_support">Yardım hattını ara</string>
     <string name="type_message">Mesaj yazın</string>
     <string name="not_sent">Gönderilemedi. SIM kart takılı mı?</string>
+    <string name="support">Destek</string>
+    <string name="support_not_set">Ayarlanmadı, bu yüzden ekranında soru işareti yok</string>
+    <string name="support_explained">Bu telefondaki uygulamayla ilgilenen kişi. Numara girilince ekranında başlığın yanında bir soru işareti çıkar. Oradan bu kişiyi arayabilir veya mesaj yazabilir.</string>
+    <string name="support_name">Ad, örneğin \"Volkan\"</string>
+    <string name="support_number">Telefon numarası</string>
+    <string name="support_page_explained">Telefonda veya uygulamada sorun mu var? Arayın veya yazın.</string>
+    <string name="call_support">Desteği ara</string>
 </resources>

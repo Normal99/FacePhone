@@ -253,14 +253,14 @@ private fun FacesScreen(go: (Screen) -> Unit) {
                     ) {
                         Icon(Icons.Filled.Settings, stringResource(R.string.settings), tint = Color.White, modifier = Modifier.size(36.dp))
                     }
-                    // Help with the app: calls the number the family set.
+                    // Support for the app, from whoever looks after this phone.
                     if (settings.supportNumber.isNotBlank()) {
                         Box(
                             Modifier.align(Alignment.CenterEnd).size(64.dp).clip(CircleShape)
                                 .background(AppColors.Blue).forgivingTap { go(Screen.Support) },
                             contentAlignment = Alignment.Center,
                         ) {
-                            Icon(Icons.Filled.QuestionMark, stringResource(R.string.app_help), tint = Color.White, modifier = Modifier.size(40.dp))
+                            Icon(Icons.Filled.QuestionMark, stringResource(R.string.support), tint = Color.White, modifier = Modifier.size(40.dp))
                         }
                     }
                 }
@@ -323,46 +323,36 @@ private fun FacesScreen(go: (Screen) -> Unit) {
 }
 
 /**
- * Help with the app itself, for her or grandpa: a call-centre style call button, and a box to
- * type a message. Foreign numbers get the message in WhatsApp, ready to send.
+ * Support for the app, from whoever looks after this phone: a call-centre style call button,
+ * and a box to type them a text message.
  */
 @Composable
 private fun SupportScreen(go: (Screen) -> Unit) {
     val context = LocalContext.current
     val settings by Repo.settings.collectAsState()
-    val contacts by Repo.contacts.collectAsState()
     val number = settings.supportNumber
-    // Someone in her contacts keeps their face and WhatsApp. Otherwise it's just the number.
-    val person = ContactMatch.byNumber(contacts, number) ?: Contact("support", number, number)
+    // Not one of her people, so the call goes by the number's own route.
+    val support = Contact("support", settings.supportName.ifBlank { number }, number)
     var text by remember { mutableStateOf("") }
     var sent by remember { mutableStateOf<Boolean?>(null) }
-    val viaWhatsApp = Calling.route(person) == CallRoute.WHATSAPP
-    val sendText = {
-        if (viaWhatsApp) {
-            if (WhatsApp.openChat(context, person, text.trim())) text = ""
-        } else {
-            sent = SmsClient.send(context, number, text.trim())
-            if (sent == true) text = ""
-        }
-    }
 
     Column(Modifier.fillMaxSize().padding(16.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             RoundIconButton(Icons.Filled.ArrowBack, AppColors.Dark, 72, stringResource(R.string.back)) { go(Screen.Faces) }
-            Text(stringResource(R.string.app_help), Modifier.weight(1f), fontSize = 28.sp, fontWeight = FontWeight.Light, textAlign = TextAlign.Center)
-            Box(Modifier.size(72.dp).clip(CircleShape).background(AppColors.Blue), contentAlignment = Alignment.Center) {
-                Icon(Icons.Filled.QuestionMark, null, tint = Color.White, modifier = Modifier.size(44.dp))
+            Text(stringResource(R.string.support), Modifier.weight(1f), fontSize = 30.sp, fontWeight = FontWeight.Light, textAlign = TextAlign.Center)
+            Spacer(Modifier.size(72.dp))
+        }
+        Column(Modifier.weight(1f).fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
+            Box(Modifier.size(180.dp).clip(CircleShape).background(AppColors.Purple), contentAlignment = Alignment.Center) {
+                Icon(Icons.Filled.HeadsetMic, null, tint = Color.White, modifier = Modifier.size(110.dp))
             }
+            Text(support.name, Modifier.padding(top = 16.dp), fontSize = 28.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center)
+            Text(stringResource(R.string.support_page_explained), fontSize = 20.sp, textAlign = TextAlign.Center)
         }
-        Box(Modifier.weight(1f).fillMaxWidth()) {
-            FaceImage(person, Modifier.fillMaxSize().clip(RoundedCornerShape(26.dp)))
-            NameStrip(person.name, Modifier.align(Alignment.BottomCenter))
-        }
-        Text(stringResource(R.string.app_help_explained), Modifier.fillMaxWidth(), fontSize = 20.sp, textAlign = TextAlign.Center)
-        if (Calling.canCall(context, person)) {
+        if (Calling.canCall(context, support)) {
             Box(
                 Modifier.fillMaxWidth().height(96.dp).clip(RoundedCornerShape(48.dp))
-                    .background(Calling.color(person)).forgivingTap { Calling.call(context, person) },
+                    .background(AppColors.Green).forgivingTap { Calling.call(context, support) },
                 contentAlignment = Alignment.Center,
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -385,7 +375,10 @@ private fun SupportScreen(go: (Screen) -> Unit) {
                 maxLines = 4,
             )
             RoundIconButton(Icons.Filled.Send, if (text.isBlank()) AppColors.Grey else AppColors.Blue, 72, stringResource(R.string.send)) {
-                if (text.isNotBlank()) sendText()
+                if (text.isNotBlank()) {
+                    sent = SmsClient.send(context, number, text.trim())
+                    if (sent == true) text = ""
+                }
             }
         }
         sent?.let {

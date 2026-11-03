@@ -21,6 +21,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
+import androidx.compose.material.icons.filled.HeadsetMic
 import com.family.grandmaphone.ui.rememberPhotoPicker
 import androidx.compose.runtime.LaunchedEffect
 import com.family.grandmaphone.ui.AppColors
@@ -152,6 +153,7 @@ class AdminActivity : ComponentActivity() {
                         AdminPage.VOICE -> VoicePage(home)
                         AdminPage.SETUP -> SetupPage(home)
                         AdminPage.UPDATES -> UpdatesPage(home)
+                        AdminPage.SUPPORT -> SupportPage(home)
                         AdminPage.UNKNOWN -> UnknownMessagesPage(home)
                     }
                 }
@@ -211,7 +213,7 @@ private fun makeLoud(context: Context) {
     }
 }
 
-private enum class AdminPage { HOME, CONTACTS, CALLING, HELP, BATTERY, SCREEN, VOICE, SETUP, UPDATES, UNKNOWN }
+private enum class AdminPage { HOME, CONTACTS, CALLING, HELP, BATTERY, SCREEN, VOICE, SETUP, UPDATES, SUPPORT, UNKNOWN }
 
 /** The settings home: categories like Samsung's Settings app, each opening its own page. */
 @Composable
@@ -245,6 +247,9 @@ private fun AdminHome(open: (AdminPage) -> Unit, onBack: () -> Unit) {
                 if (toFix > 0) stringResource(R.string.setup_todo, toFix) else stringResource(R.string.setup_ok)) { open(AdminPage.SETUP) }
             OneUiDivider()
             CategoryRow(Icons.Filled.SystemUpdate, AppColors.Blue, R.string.update_title, stringResource(R.string.version_now, BuildConfig.VERSION_NAME)) { open(AdminPage.UPDATES) }
+            OneUiDivider()
+            CategoryRow(Icons.Filled.HeadsetMic, AppColors.Purple, R.string.support,
+                settings.supportName.ifBlank { settings.supportNumber }.ifBlank { stringResource(R.string.support_not_set) }) { open(AdminPage.SUPPORT) }
             OneUiDivider()
             CategoryRow(Icons.Filled.Sms, AppColors.Grey, R.string.unknown_messages, stringResource(R.string.message_count, unknown)) { open(AdminPage.UNKNOWN) }
         }
@@ -548,21 +553,40 @@ private fun CallingPage(onBack: () -> Unit) {
     }
 }
 
+/** Whoever looks after this phone's app. Their number puts the question mark on her screen. */
+@Composable
+private fun SupportPage(onBack: () -> Unit) {
+    val settings = remember { Repo.settings.value }
+    var name by remember { mutableStateOf(settings.supportName) }
+    var number by remember { mutableStateOf(settings.supportNumber) }
+    SettingsPage(R.string.support, onBack, listOf(name, number), save = {
+        updateSettings { it.copy(supportName = name.trim(), supportNumber = number.trim()) }
+    }) {
+        OneUiGroup {
+            OneUiRow(stringResource(R.string.support_explained))
+        }
+        OneUiGroup {
+            FieldPadding {
+                Field(R.string.support_name, name) { name = it }
+                Field(R.string.support_number, number) { number = it }
+            }
+        }
+    }
+}
+
 @Composable
 private fun HelpPage(onBack: () -> Unit) {
     val settings = remember { Repo.settings.value }
     var emergency by remember { mutableStateOf(settings.emergencyNumber) }
     var help by remember { mutableStateOf(settings.helpMessage) }
-    var support by remember { mutableStateOf(settings.supportNumber) }
     val contacts by Repo.contacts.collectAsState()
-    SettingsPage(R.string.cat_help, onBack, listOf(emergency, help, support), save = {
-        updateSettings { it.copy(emergencyNumber = emergency.trim(), helpMessage = help.trim(), supportNumber = support.trim()) }
+    SettingsPage(R.string.cat_help, onBack, listOf(emergency, help), save = {
+        updateSettings { it.copy(emergencyNumber = emergency.trim(), helpMessage = help.trim()) }
     }) {
         OneUiGroup {
             FieldPadding {
                 Field(R.string.emergency_number, emergency) { emergency = it }
                 Field(R.string.help_message, help, stringResource(R.string.default_help_message)) { help = it }
-                Field(R.string.support_number, support) { support = it }
             }
         }
         val helpers = contacts.filter { it.helpsInEmergency }

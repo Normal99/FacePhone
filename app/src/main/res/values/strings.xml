@@ -135,10 +135,13 @@
     <string name="retake_photo">Take a new photo</string>
     <string name="pick_photo">Choose a photo from the gallery</string>
     <string name="widget_description">Her people\'s faces on a home screen page. Tap a face to open that person.</string>
-    <string name="support_number">Number for help with the app (the question mark on her screen)</string>
-    <string name="app_help">Help with the phone</string>
-    <string name="app_help_explained">Something wrong with the phone? Call for help.</string>
-    <string name="call_support">Call for help</string>
     <string name="type_message">Type a message</string>
     <string name="not_sent">Couldn\'t send. Is there a SIM card?</string>
+    <string name="support">Support</string>
+    <string name="support_not_set">Not set, so there\'s no question mark on her screen</string>
+    <string name="support_explained">Whoever looks after the app on this phone. With a number set, a question mark appears next to the title on her screen. It opens a page to call them or text them.</string>
+    <string name="support_name">Name, like \"Volkan\"</string>
+    <string name="support_number">Phone number</string>
+    <string name="support_page_explained">Problem with the phone or the app? Call or write.</string>
+    <string name="call_support">Call support</string>
 </resources>

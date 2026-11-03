@@ -129,4 +129,11 @@
     <string name="setup_todo">%1$d eksik var</string>
     <string name="setup_ok">Hepsi tamam</string>
     <string name="message_count">%1$d mesaj</string>
+    <string name="send_picture">Resim gönder</string>
+    <string name="add_photo">Fotoğraf ekle</string>
+    <string name="camera">Kamera</string>
+    <string name="gallery">Galeri</string>
+    <string name="take_photo">Bu kişi için fotoğraf çek</string>
+    <string name="retake_photo">Yeni fotoğraf çek</string>
+    <string name="pick_photo">Galeriden fotoğraf seç</string>
 </resources>

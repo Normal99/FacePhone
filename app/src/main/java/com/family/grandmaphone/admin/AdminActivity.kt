@@ -21,6 +21,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
+import com.family.grandmaphone.ui.rememberPhotoPicker
 import androidx.compose.runtime.LaunchedEffect
 import com.family.grandmaphone.ui.AppColors
 import androidx.compose.runtime.rememberUpdatedState
@@ -121,17 +122,24 @@ import java.util.Locale
 
 /** The family's screen, styled like Samsung's Settings app. She gets here only by a hidden gesture. */
 class AdminActivity : ComponentActivity() {
+    companion object {
+        const val EXTRA_EDIT = "edit"
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
             FacesTheme {
-                var page by remember { mutableStateOf(AdminPage.HOME) }
-                var editing by remember { mutableStateOf<Contact?>(null) }
+                // Opened from a person's screen: straight to their settings, and closing returns there.
+                val startWith = remember { intent.getStringExtra(EXTRA_EDIT)?.let { Repo.contact(it) } }
+                var page by remember { mutableStateOf(if (startWith != null) AdminPage.CONTACTS else AdminPage.HOME) }
+                var editing by remember { mutableStateOf(startWith) }
                 val contact = editing
                 val home = { page = AdminPage.HOME }
+                val closeEditor = { if (startWith != null) finish() else editing = null }
                 if (contact != null) {
-                    BackHandler { editing = null }
-                    ContactEditor(contact, onClose = { editing = null })
+                    BackHandler { closeEditor() }
+                    ContactEditor(contact, onClose = closeEditor)
                 } else {
                     BackHandler(page != AdminPage.HOME) { home() }
                     when (page) {
@@ -746,6 +754,7 @@ private fun ContactEditor(original: Contact, onClose: () -> Unit) {
     var aliases by remember { mutableStateOf(original.aliases.joinToString(", ")) }
     val id = original.id
     val photo = rememberImage(Repo.photoFile(id)) ?: rememberImage(Repo.whatsAppPhotoFile(id))
+    val picker = rememberPhotoPicker(original)
     val save = {
         // Starts from the latest copy, in case the phone's contacts changed while editing.
         val current = Repo.contact(id) ?: original
@@ -791,6 +800,18 @@ private fun ContactEditor(original: Contact, onClose: () -> Unit) {
                 OneUiDivider()
                 ClipRecorder(R.string.record_ring, Repo.ringClipFile(id))
             }
+            OneUiDivider()
+            OneUiRow(
+                stringResource(if (photo == null) R.string.take_photo else R.string.retake_photo),
+                titleColor = MaterialTheme.colorScheme.primary,
+                onClick = picker.camera,
+            )
+            OneUiDivider()
+            OneUiRow(
+                stringResource(R.string.pick_photo),
+                titleColor = MaterialTheme.colorScheme.primary,
+                onClick = picker.gallery,
+            )
             if (photo != null) {
                 OneUiDivider()
                 OneUiRow(

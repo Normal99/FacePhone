@@ -127,4 +127,11 @@
     <string name="setup_todo">%1$d things to fix</string>
     <string name="setup_ok">All done</string>
     <string name="message_count">%1$d messages</string>
+    <string name="send_picture">Send picture</string>
+    <string name="add_photo">Add photo</string>
+    <string name="camera">Camera</string>
+    <string name="gallery">Gallery</string>
+    <string name="take_photo">Take a photo for this person</string>
+    <string name="retake_photo">Take a new photo</string>
+    <string name="pick_photo">Choose a photo from the gallery</string>
 </resources>

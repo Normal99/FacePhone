@@ -40,6 +40,9 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import com.family.grandmaphone.ui.rememberPhotoPicker
+import androidx.compose.material.icons.filled.PhotoLibrary
+import androidx.compose.material.icons.filled.AddAPhoto
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Call
 import androidx.compose.material.icons.filled.CallMade
@@ -454,6 +457,10 @@ private fun PersonScreen(contact: Contact, go: (Screen) -> Unit) {
         compareBy<InboxItem> { it.seen }.thenByDescending { it.time }
     ).take(MESSAGES_SHOWN)
     val photoTarget = remember(contact.id) { File(context.cacheDir, "camera.jpg") }
+    val filesVersion by Repo.filesVersion.collectAsState()
+    val hasPhoto = remember(contact.id, filesVersion) {
+        Repo.photoFile(contact.id).exists() || Repo.whatsAppPhotoFile(contact.id).exists()
+    }
     val camera = rememberLauncherForActivityResult(ActivityResultContracts.TakePicture()) { taken ->
         if (taken) go(Screen.Sending(contact.id, photoTarget, isPicture = true))
     }
@@ -473,6 +480,11 @@ private fun PersonScreen(contact: Contact, go: (Screen) -> Unit) {
             RoundIconButton(Icons.Filled.ArrowBack, AppColors.Dark, 72, stringResource(R.string.back), Modifier.padding(8.dp)) {
                 go(Screen.Faces)
             }
+            // The family's settings for this person.
+            RoundIconButton(Icons.Filled.Settings, AppColors.Dark, 72, stringResource(R.string.settings), Modifier.align(Alignment.TopEnd).padding(8.dp)) {
+                context.startActivity(Intent(context, AdminActivity::class.java).putExtra(AdminActivity.EXTRA_EDIT, contact.id))
+            }
+            if (!hasPhoto) AddPhoto(contact, Modifier.align(Alignment.Center))
             NameStrip(contact.name, Modifier.align(Alignment.BottomCenter))
         }
         if (messages.isNotEmpty()) {
@@ -495,7 +507,7 @@ private fun PersonScreen(contact: Contact, go: (Screen) -> Unit) {
                     Calling.call(context, contact)
                 }
             }
-            RoundIconButton(Icons.Filled.CameraAlt, AppColors.Blue, 96, stringResource(R.string.picture), label = stringResource(R.string.picture)) {
+            RoundIconButton(Icons.Filled.CameraAlt, AppColors.Blue, 96, stringResource(R.string.send_picture), label = stringResource(R.string.send_picture)) {
                 val uri: Uri = FileProvider.getUriForFile(context, "${context.packageName}.files", photoTarget)
                 camera.launch(uri)
             }
@@ -507,6 +519,30 @@ private fun PersonScreen(contact: Contact, go: (Screen) -> Unit) {
 }
 
 private const val MESSAGES_SHOWN = 10
+
+/** On a face without a photo: one tap, then camera or gallery. It becomes their contact photo. */
+@Composable
+private fun AddPhoto(contact: Contact, modifier: Modifier) {
+    val picker = rememberPhotoPicker(contact)
+    var choosing by remember(contact.id) { mutableStateOf(false) }
+    if (!choosing) {
+        RoundIconButton(Icons.Filled.AddAPhoto, AppColors.Green, 112, stringResource(R.string.add_photo), modifier, label = stringResource(R.string.add_photo), labelColor = Color.White) {
+            choosing = true
+        }
+    } else {
+        Row(modifier, horizontalArrangement = Arrangement.spacedBy(24.dp), verticalAlignment = Alignment.CenterVertically) {
+            RoundIconButton(Icons.Filled.CameraAlt, AppColors.Green, 104, stringResource(R.string.camera), label = stringResource(R.string.camera), labelColor = Color.White) {
+                choosing = false
+                picker.camera()
+            }
+            RoundIconButton(Icons.Filled.PhotoLibrary, AppColors.Blue, 104, stringResource(R.string.gallery), label = stringResource(R.string.gallery), labelColor = Color.White) {
+                choosing = false
+                picker.gallery()
+            }
+            RoundIconButton(Icons.Filled.Close, AppColors.Dark, 72, stringResource(R.string.cancel)) { choosing = false }
+        }
+    }
+}
 
 @Composable
 private fun WhatsAppRow(contact: Contact, unread: Boolean, go: (Screen) -> Unit) {

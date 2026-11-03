@@ -94,6 +94,17 @@
 
         <receiver android:name=".update.InstallReceiver" android:exported="false" />
 
+        <receiver android:name=".widget.FacesWidget" android:exported="true" android:label="@string/app_name">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data android:name="android.appwidget.provider" android:resource="@xml/faces_widget_info" />
+        </receiver>
+        <service
+            android:name=".widget.FacesWidgetService"
+            android:exported="false"
+            android:permission="android.permission.BIND_REMOTEVIEWS" />
+
         <!-- Handling this stops Android posting its own text-only missed call notification. -->
         <receiver android:name=".call.MissedCallReceiver" android:exported="true">
             <intent-filter>

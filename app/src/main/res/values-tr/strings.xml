@@ -136,4 +136,5 @@
     <string name="take_photo">Bu kişi için fotoğraf çek</string>
     <string name="retake_photo">Yeni fotoğraf çek</string>
     <string name="pick_photo">Galeriden fotoğraf seç</string>
+    <string name="widget_description">Kişilerinin yüzleri ana ekranda bir sayfada. Bir yüze dokununca o kişi açılır.</string>
 </resources>

@@ -134,4 +134,5 @@
     <string name="take_photo">Take a photo for this person</string>
     <string name="retake_photo">Take a new photo</string>
     <string name="pick_photo">Choose a photo from the gallery</string>
+    <string name="widget_description">Her people\'s faces on a home screen page. Tap a face to open that person.</string>
 </resources>
